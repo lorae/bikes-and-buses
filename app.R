@@ -20,7 +20,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   output$nyc_map <- renderLeaflet({
     leaflet() |>
-      addTiles() |>  # Add default OpenStreetMap tiles
+     # addTiles() |>  # Add default OpenStreetMap tiles
+      addProviderTiles("CartoDB.Positron")|>
       setView(lng = -74.0060, lat = 40.7128, zoom = 12) |>  # NYC
       addMarkers(data = data.frame(lng = c(-74.01344621681184), lat = c(40.70557265045331)))
   })
