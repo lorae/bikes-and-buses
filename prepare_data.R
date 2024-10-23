@@ -7,7 +7,8 @@ library(stringr)
 
 # Read in citi bike data
 # test this out with a random month from 2013
-bike_data <- read_csv('~/bikes-and-buses/data/201306-citibike-tripdata.csv')
+# bike_data <- read_csv('~/bikes-and-buses/data/201306-citibike-tripdata.csv')
+bike_data <- read_csv('data/201306-citibike-tripdata.csv')
 
 # Spatial join NYC blocks with Citi Bike data in order to get census block
 # that each ride originates in
