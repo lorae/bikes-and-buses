@@ -97,3 +97,14 @@ station_trips <- trips |>
   summarise(trip_count = n(), .by = c("station_id"))
   # .by = c("station_id", "station_point") # opt: add grouping for start/end
 
+## ---- buffer stations ---- 
+# create a buffer around each station
+station_buffer <- stations |> st_buffer(units::set_units(.15, km))
+
+# add station trip data to station markers
+station_buffer <- station_buffer |> 
+  left_join(station_trips, by = "station_id") |> 
+  mutate(label = paste0("<strong>", station_name, "</strong>",
+                        "<br><b>Total Trips:</b> ", trip_count))
+
+
