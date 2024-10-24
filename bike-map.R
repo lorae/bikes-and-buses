@@ -6,7 +6,8 @@ library(leaflet)
 
 # ---- bike data ----
 # TODO: add link to the original dataset
-bike_data <- read_csv('data/201306-citibike-tripdata.csv') |> 
+# bike_data <- read_csv('data/201306-citibike-tripdata.csv') |> 
+bike_data <- read_csv('data/bike_data_2023.csv') |> 
   janitor::clean_names() |> 
   mutate(trip_id = row_number(), .before = 1)
 
@@ -28,7 +29,7 @@ bike_data <- read_csv('data/201306-citibike-tripdata.csv') |>
 get_station_info <- function(.data, station_type = NULL) {
   
   .data |> 
-    select(starts_with(paste0(station_type, "_station"))) |> 
+    select(starts_with(paste0(station_type))) |> 
     distinct() |> 
     rename_with(~ str_remove(., paste0(station_type, "_"))) |> 
     mutate(across(everything(), as.character))
@@ -49,25 +50,25 @@ stations <- bind_rows(start_stations, end_stations) |>
 
 # convert the lat & long data into a geometry column. set the crs.
 stations <- stations |> 
-  st_as_sf(coords = c("station_longitude", "station_latitude"), crs = "WGS84")
+  st_as_sf(coords = c("lng", "lat"), crs = "WGS84")
 
 ## ---- get trip data ----
 trips <- bike_data |> 
-  select(trip_id:start_station_id, end_station_id) |> 
+  select(trip_id:start_station_id, end_station_id, num_trips:avg_ride_time_sec) |> 
   # TODO: filter out tests & service center
   filter(end_station_id != "NULL") |> 
   mutate(across(ends_with("station_id"), as.numeric))
 
 #' group trip data by start & end stations, to get route info
 #' summarize to count the number of rides & find other descriptive info
-routes <- trips |> 
-  summarise(
-    trips = n(),
-    total_ride_time = sum(tripduration),
-    average_ride_time = mean(tripduration),
-    median_ride_time = median(tripduration),
-    .by = c("start_station_id", "end_station_id")
-  )
+routes <- trips
+  # summarise(
+  #   trips = n(),
+  #   total_ride_time = sum(tripduration),
+  #   average_ride_time = mean(tripduration),
+  #   median_ride_time = median(tripduration),
+  #   .by = c("start_station_id", "end_station_id")
+  # )
 # TODO: create route_id 
 
 # add the geometries back to the stations
@@ -82,19 +83,21 @@ station_lines$geometry <- mapply(function(p1, p2) {
 }, station_routes$start_geometry, station_routes$end_geometry)
 # is there a better way to do this?
 
+depot_stations <- c(255, 3017, 3019, 3020)
+
 station_lines <- station_lines |> st_as_sf() |> 
-  filter(start_station_id != end_station_id)
+  filter(start_station_id != end_station_id, !start_station_id %in% depot_stations, !end_station_id %in% depot_stations, num_trips > 40)
 
 ## join station & trip ----
 # count the number of trips for each station by pivoting start and end locations
 station_trips <- trips |> 
-  select(trip_id, start_station_id, end_station_id, tripduration) |> 
+  select(num_trips, start_station_id, end_station_id, total_ride_time_sec) |> 
   filter(start_station_id != end_station_id) |> 
   pivot_longer(cols = ends_with("station_id"),
                # names_to = "station_point", # start or end point
                # names_pattern = "(.*)_station_id", # extracts "start" or "end" 
                values_to = "station_id") |> 
-  summarise(trip_count = n(), .by = c("station_id"))
+  summarise(trip_count = sum(num_trips), .by = c("station_id"))
   # .by = c("station_id", "station_point") # opt: add grouping for start/end
 
 ## ---- buffer stations ---- 
@@ -125,7 +128,7 @@ station_palette <- colorNumeric(
 )
 
 lines_palette <- colorNumeric(
-  palette = "viridis", domain = station_lines$trips
+  palette = "viridis", domain = station_lines$num_trips
 )
 
 # ---- map data ---- 
@@ -134,9 +137,18 @@ leaflet() |>
   addPolygons(data = station_buffer,
               weight = 0.75,
               color = ~ station_palette(station_buffer$trip_count),
-              label = ~ lapply(station_buffer$label, htmltools::HTML)) |> 
+              label = ~ lapply(station_buffer$label, htmltools::HTML),
+              group = "Bike Stations") |> 
   addPolylines(data = station_lines,
                weight = .25,
-               color = ~ lines_palette(station_lines$trips))
+               opacity = .2,
+               color = ~ lines_palette(station_lines$num_trips),
+               group = "Bike Routes") |> 
+  addLayersControl(
+    overlayGroups = c(
+      "Bike Stations",
+      "Bike Routes"
+    ), options = layersControlOptions(collapsed = FALSE)
+  )
   # addMarkers(data = stations,
   #            label = stations$station_name)
