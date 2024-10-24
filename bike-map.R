@@ -51,3 +51,22 @@ stations <- bind_rows(start_stations, end_stations) |>
 stations <- stations |> 
   st_as_sf(coords = c("station_longitude", "station_latitude"), crs = "WGS84")
 
+## ---- get trip data ----
+trips <- bike_data |> 
+  select(trip_id:start_station_id, end_station_id) |> 
+  # TODO: filter out tests & service center
+  filter(end_station_id != "NULL") |> 
+  mutate(across(ends_with("station_id"), as.numeric))
+
+#' group trip data by start & end stations, to get route info
+#' summarize to count the number of rides & find other descriptive info
+routes <- trips |> 
+  summarise(
+    trips = n(),
+    total_ride_time = sum(tripduration),
+    average_ride_time = mean(tripduration),
+    median_ride_time = median(tripduration),
+    .by = c("start_station_id", "end_station_id")
+  )
+# TODO: create route_id 
+
