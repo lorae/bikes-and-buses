@@ -108,6 +108,17 @@ station_buffer <- station_buffer |>
                         "<br><b>Total Trips:</b> ", trip_count))
 
 
+# ---- nyc tigris data ----
+# library(tigris)
+# options(tigris_use_cache = TRUE)
+# 
+# nyc_place <- places("NY", cb = TRUE) |> filter(NAME == "New York")
+# nyc_blocks <- blocks("NY", year = 2020) |> st_filter(nyc_place, .predicate = st_within)
+# nyc_blocks <- nyc_blocks |> st_transform("WGS84")
+# 
+# # adds census block to station information
+# station_blocks <- st_join(stations, nyc_blocks)
+
 # ---- viz prep ----
 station_palette <- colorNumeric(
   palette = "viridis", domain = station_buffer$trip_count
