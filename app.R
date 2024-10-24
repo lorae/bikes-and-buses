@@ -1,31 +1,18 @@
-library(shiny)
 library(leaflet)
 library(readr)
 library(dplyr)
 
-bus_stop <- read_csv(
-  "https://data.ny.gov/resource/wgnh-hpq9.csv?$limit=4000"
-  ) |>
-  rename(lat = latitude, lng = longitude) |>
+# Load bus stop data
+subway_stops <- read_csv(
+  "https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000"
+) |>
+  rename(lat = entrance_latitude, lng = entrance_longitude) |>
   filter(!is.na(lat) & !is.na(lng)) |>
   select(lat, lng)
 
-# Define UI
-ui <- fluidPage(
-  titlePanel("NYC Bus Stops"),
-  leafletOutput("nyc_map")
-)
+# Create leaflet map
+leaflet() |>
+  addProviderTiles("CartoDB.Positron") |>
+  setView(lng = -74.0060, lat = 40.7128, zoom = 12) |>  # Center on NYC
+  addMarkers(data = subway_stops)
 
-# Define server
-server <- function(input, output, session) {
-  output$nyc_map <- renderLeaflet({
-    leaflet() |>
-     # addTiles() |>  # Add default OpenStreetMap tiles
-      addProviderTiles("CartoDB.Positron")|>
-      setView(lng = -74.0060, lat = 40.7128, zoom = 12) |>  # NYC
-      addMarkers(data = data.frame(lng = c(-74.01344621681184), lat = c(40.70557265045331)))
-  })
-}
-
-# Run the application 
-shinyApp(ui = ui, server = server)
