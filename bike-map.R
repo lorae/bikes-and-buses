@@ -85,3 +85,15 @@ station_lines$geometry <- mapply(function(p1, p2) {
 station_lines <- station_lines |> st_as_sf() |> 
   filter(start_station_id != end_station_id)
 
+## join station & trip ----
+# count the number of trips for each station by pivoting start and end locations
+station_trips <- trips |> 
+  select(trip_id, start_station_id, end_station_id, tripduration) |> 
+  filter(start_station_id != end_station_id) |> 
+  pivot_longer(cols = ends_with("station_id"),
+               # names_to = "station_point", # start or end point
+               # names_pattern = "(.*)_station_id", # extracts "start" or "end" 
+               values_to = "station_id") |> 
+  summarise(trip_count = n(), .by = c("station_id"))
+  # .by = c("station_id", "station_point") # opt: add grouping for start/end
+
