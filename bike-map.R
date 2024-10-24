@@ -108,3 +108,24 @@ station_buffer <- station_buffer |>
                         "<br><b>Total Trips:</b> ", trip_count))
 
 
+# ---- viz prep ----
+station_palette <- colorNumeric(
+  palette = "viridis", domain = station_buffer$trip_count
+)
+
+lines_palette <- colorNumeric(
+  palette = "viridis", domain = station_lines$trips
+)
+
+# ---- map data ---- 
+leaflet() |> 
+  addProviderTiles("CartoDB.Positron")|>
+  addPolygons(data = station_buffer,
+              weight = 0.75,
+              color = ~ station_palette(station_buffer$trip_count),
+              label = ~ lapply(station_buffer$label, htmltools::HTML)) |> 
+  addPolylines(data = station_lines,
+               weight = .25,
+               color = ~ lines_palette(station_lines$trips))
+  # addMarkers(data = stations,
+  #            label = stations$station_name)
