@@ -70,3 +70,18 @@ routes <- trips |>
   )
 # TODO: create route_id 
 
+# add the geometries back to the stations
+station_routes <- routes |> 
+  left_join(stations |> select(station_id, start_geometry = geometry), by = c("start_station_id" = "station_id")) |> 
+  left_join(stations |> select(station_id, end_geometry = geometry), by = c("end_station_id" = "station_id"))
+  
+station_lines <- routes
+# combine the start and end points into a linestring
+station_lines$geometry <- mapply(function(p1, p2) {
+  st_cast(st_combine(c(p1, p2)), "LINESTRING")
+}, station_routes$start_geometry, station_routes$end_geometry)
+# is there a better way to do this?
+
+station_lines <- station_lines |> st_as_sf() |> 
+  filter(start_station_id != end_station_id)
+
