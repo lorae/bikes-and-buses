@@ -102,6 +102,21 @@ line_colors <- c(
 subway_lines_sf <- subway_lines |> 
   mutate(color = ifelse(name %in% names(line_colors), line_colors[name], "#000000"))
 
+# ---- Compute which bike rides are within/out of buffer ----
+in_buffer <- stations |>
+  mutate(within_subway_buffer = st_within(geometry, subway_buffer) |> lengths() > 0) |>
+  st_drop_geometry()
+
+# Drop geometry, join with buffer info, reattach geometry, and filter
+station_lines_in_buffer <- station_lines |>
+  st_drop_geometry() |>
+  left_join(in_buffer |> rename(station1_in_buffer = within_subway_buffer), by = c("station1_id" = "station_id")) |>
+  left_join(in_buffer |> rename(station2_in_buffer = within_subway_buffer), by = c("station2_id" = "station_id")) |>
+  bind_cols(station_lines |> select(geometry)) |>
+  st_as_sf() |>
+  filter(station1_in_buffer & station2_in_buffer) 
+
+
 # ---- Visualization Prep ----
 lines_palette <- colorNumeric(
   palette = "viridis", domain = station_lines$num_trips
@@ -127,11 +142,16 @@ server <- function(input, output, session) {
                   fillOpacity = 0.3,
                   label = ~ lapply(label, htmltools::HTML),
                   group = "Subway Stations") |>
-      addPolylines(data = station_lines,
-                   weight = .25,
+      # addPolylines(data = station_lines,
+      #              weight = .25,
+      #              opacity = .2,
+      #              color = ~ lines_palette(station_lines$num_trips),
+      #              group = "Bike Routes") |>
+      addPolylines(data = station_lines_in_buffer,
+                   weight = .5,
                    opacity = .2,
-                   color = ~ lines_palette(station_lines$num_trips),
-                   group = "Bike Routes") |>
+                   color = "blue",
+                   group = "Subway substitute bike routes") |>
       addPolylines(
         data = subway_lines_sf,
         color = ~color,
@@ -149,6 +169,10 @@ server <- function(input, output, session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
+# TODO: only show the station_lines_in_buffer and convert other station_lines
+# to a heat map?
+# TODO: Or add all station_lines as optional filter on map?
 
 
 
