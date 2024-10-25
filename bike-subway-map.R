@@ -127,38 +127,60 @@ color_pal_quantile <- colorBin(palette = c("yellow", "purple"),
                                domain = station_lines_sample$num_trips, 
                                bins = quantile(station_lines_sample$num_trips, probs = seq(0, 1, length.out = 10), na.rm = TRUE))
 # ---- Define UI ----
+# ---- Define UI ----
 ui <- fluidPage(
-  titlePanel("Where do New Yorkers Ride?"),
+  titlePanel(
+    div(
+      "Where Do New Yorkers Ride?",
+      style = "font-family: 'Arial'; font-weight: bold; font-size: 28px; color: #2C3E50; text-align: center;"
+    )
+  ),
+  
   sidebarLayout(
     sidebarPanel(
-      p("In 2023, Citi Bike users took over XXXXX rides. Although it’s difficult to know the exact twists and turns that these cyclists took, 
-        we represented their approximate routes on a map by connecting their start and endpoints. The base colors on the map—yellow for the least-frequented locations, 
-        and violet for the most-frequented locations—represent the density of Citibike traffic in 2023."),
+      style = "background-color: #ffffff; border-radius: 10px; padding: 20px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);",
       
-      h4("Purpose of the Map"),
-      p("People bike for a variety of reasons—leisure, commuting, or even to connect with public transit. 
-        Our interest is in understanding where Citi Bike users may substitute biking for public transit.
-        To do this, we mapped New York City's subway system, and encircled each stop with a 150-yard radius. 
-        Then, we investigated bike rides that took place between two subway stops."),
-      
-      h4("Key Routes"),
-      p("Here are some of the most popular routes between subway stops that we identified:"),
-      tags$ul(
-        tags$li("Route A: 110th St at Central Park and XXX"),
-        tags$li("Route B: 116th St between B,C lines and XX, YY"),
-        tags$li("...")  # Add real examples here
+      # Introduction Text
+      div(style = "font-family: 'Arial'; font-size: 16px; color: #34495E; line-height: 1.6;",
+          p("In 2023, Citi Bike users took over XXX rides. Although it’s difficult to know the exact routes these cyclists took, we represented their approximate routes on a map by connecting their start and endpoints."),
+          p("The base colors on the map—yellow for the least-frequented locations, and violet for the most-frequented locations—represent the density of Citi Bike traffic in 2023.")
       ),
       
-      p("These routes indicate significant biking activity in areas with parallel subway lines. 
-        This suggests that people might be using Citi Bike to supplement gaps in subway coverage."),
+      # Purpose of the Map
+      h4("Purpose of the Map", style = "font-family: 'Arial'; font-weight: bold; color: #2C3E50;"),
+      div(style = "font-family: 'Arial'; font-size: 16px; color: #34495E; line-height: 1.6;",
+          p("People bike for a variety of reasons—leisure, commuting, or even to connect with public transit. Our interest is in understanding where Citi Bike users may substitute biking for public transit."),
+          p("We mapped New York City's subway system, encircling each stop with a 150-yard radius. Then, we investigated bike rides that took place between two subway stops.")
+      ),
       
-      h4("Future Insights"),
-      p("This map doesn’t show the full picture as it only includes subway lines. With more time, this map could include data about daily train ridership, 
-         bus delays, and other metrics. However, even without bus data, Citi Bike traffic patterns give insights into commuter behavior and areas that 
-         might benefit from improved transit coverage.")
+      # Key Routes Section
+      h4("Key Routes", style = "font-family: 'Arial'; font-weight: bold; color: #2C3E50;"),
+      div(style = "font-family: 'Arial'; font-size: 16px; color: #34495E; line-height: 1.6;",
+          p("Here are some of the most popular routes between subway stops that we identified:"),
+          tags$ul(
+            tags$li("Route A: 110th St at Central Park and 116th St."),
+            tags$li("Route B: 116th St between B,C lines and XX, YY."),
+            tags$li("...")  # Add real examples here
+          ),
+          p("These routes indicate significant biking activity in areas with parallel subway lines. This suggests that people might be using Citi Bike to supplement gaps in subway coverage.")
+      ),
+      
+      # Future Insights Section
+      h4("Future Insights", style = "font-family: 'Arial'; font-weight: bold; color: #2C3E50;"),
+      div(style = "font-family: 'Arial'; font-size: 16px; color: #34495E; line-height: 1.6;",
+          p("This map doesn’t show the full picture, as it only includes subway lines. With more time, this map could include data about daily train ridership, bus delays, and other metrics."),
+          p("However, even without additional data, Citi Bike traffic patterns give valuable insights into commuter behavior and highlight areas that might benefit from improved transit coverage.")
+      )
     ),
+    
+    # Main Panel for Map
     mainPanel(
-      leafletOutput("bike_subway_map", height = "80vh")  # Set the height here
+      leafletOutput("bike_subway_map", height = "80vh"),
+      
+      # Add a small footer message for clarification
+      div(style = "text-align: center; margin-top: 10px; font-family: 'Arial'; font-size: 12px; color: #95A5A6;",
+          "Sources: bike data from <XXX>, metro stops from <YYY>, subway lines from <ZZZ>."
+      )
     )
   )
 )
