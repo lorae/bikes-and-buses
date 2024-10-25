@@ -65,6 +65,17 @@ station_lines <- station_lines |>
   st_as_sf() |> 
   filter(station1_id != station2_id)
 
+# Number of trips by station, with attached geography
+station_trip_counts <- trips |>
+  select(start_station_id, end_station_id, num_trips) |>
+  pivot_longer(cols = starts_with("start_station_id"):starts_with("end_station_id"),
+               names_to = "station_type", values_to = "station_id") |>
+  group_by(station_id) |>
+  summarise(num_trips = sum(num_trips, na.rm = TRUE)) |> 
+  left_join(stations, by = "station_id") |> 
+  st_as_sf() 
+
+
 # Subway Data
 subway_stops <- read_csv("https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000") |>
   rename(lat = entrance_latitude, lng = entrance_longitude) |>
