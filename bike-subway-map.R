@@ -98,7 +98,7 @@ line_colors <- c(
 )
 
 subway_lines_sf <- subway_lines |> 
-  mutate(color = ifelse(name %in% names(line_colors), line_colors[name], "#000000"))
+  mutate(color = ifelse(rt_symbol %in% names(line_colors), line_colors[rt_symbol], "#000000"))
 
 # ---- Compute which bike rides are within/out of buffer ----
 in_buffer <- stations |>
