@@ -2,6 +2,8 @@ library(shiny)
 library(tidyverse)
 library(sf)
 library(leaflet)
+library(leaflet.extras)
+
 
 # ---- Preprocess Data Outside Server ----
 
@@ -247,13 +249,26 @@ server <- function(input, output, session) {
         dashArray = "10",
         group = "Subway Lines"
       ) |>
+      
+      addHeatmap(
+        data = station_trip_counts,
+        lng = ~st_coordinates(geometry)[,1],
+        lat = ~st_coordinates(geometry)[,2],
+        intensity = ~num_trips,
+        radius = 10, blur = 15, max = 200, 
+        minOpacity = 0.1,
+        gradient = c("yellow", "orange", "red", "purple"),
+        group = "Bike Route Heatmap"
+      ) |>
+      
       addLayersControl(
         overlayGroups = c(
           "Subway Stations",
           "Subway Lines",
-          "Bike Routes",
+          "All Bike Routes",
           "Bike route substitutes subway",
-          "Top bike routes near subways"
+          "Top bike routes near subways",
+          "Bike Route Heatmap"  # Add points to layers control
         ),
         options = layersControlOptions(collapsed = FALSE)
       ) |>
@@ -261,17 +276,11 @@ server <- function(input, output, session) {
       hideGroup(c(
         "Subway Stations",
         "Top bike routes near subways",
-        "Bike route substitutes subway"
-        ))  |>
-      addLegend("bottomright", 
-                pal = color_pal_quantile, 
-                values = station_lines_sample$num_trips,
-                title = "Bike Traffic Density",
-                labFormat = labelFormat(suffix = " trips"),
-                opacity = 1)
+        "Bike route substitutes subway",
+        "All Bike Routes"
+      ))
   })
 }
-
 
 # Run the application
 shinyApp(ui = ui, server = server)
