@@ -4,9 +4,7 @@ library(dplyr)
 library(sf)
 
 # Load subway stops data
-subway_stops <- read_csv(
-  "https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000"
-) |>
+subway_stops <- read_csv("https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000") |>
   rename(lat = entrance_latitude, lng = entrance_longitude) |>
   group_by(station_id) |>
   summarize(
