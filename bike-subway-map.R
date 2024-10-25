@@ -141,11 +141,7 @@ station_lines_sample <- station_lines |>
 lines_palette <- colorNumeric(
   palette = "viridis", domain = station_lines$num_trips
 )
-# Define a color palette from red to green based on `num_trips`
-color_pal_quantile <- colorBin(palette = c("yellow", "purple"), 
-                               domain = station_lines_sample$num_trips, 
-                               bins = quantile(station_lines_sample$num_trips, probs = seq(0, 1, length.out = 10), na.rm = TRUE))
-# ---- Define UI ----
+
 # ---- Define UI ----
 ui <- fluidPage(
   titlePanel(
@@ -223,11 +219,6 @@ server <- function(input, output, session) {
                   group = "Subway Stations") |>
       
       # Bike routes sampled
-      addPolylines(data = station_lines_sample,
-                   weight = 10,
-                   opacity = .05,
-                   color = ~ color_pal_quantile(num_trips),  # Apply quantile-based colors
-                   group = "All Bike Routes") |>
       addPolylines(data = station_lines_in_buffer,
                    weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
                    opacity = .55,
@@ -255,9 +246,10 @@ server <- function(input, output, session) {
         lng = ~st_coordinates(geometry)[,1],
         lat = ~st_coordinates(geometry)[,2],
         intensity = ~num_trips,
-        radius = 10, blur = 15, max = 200, 
+        blur = 25, max = 1000, 
         minOpacity = 0.1,
-        gradient = c("yellow", "orange", "red", "purple"),
+        radius = 20,
+        gradient = c("#ebdb34", "#d98704", "#ba0227", "#4b0380"),
         group = "Bike Route Heatmap"
       ) |>
       
@@ -265,7 +257,6 @@ server <- function(input, output, session) {
         overlayGroups = c(
           "Subway Stations",
           "Subway Lines",
-          "All Bike Routes",
           "Bike route substitutes subway",
           "Top bike routes near subways",
           "Bike Route Heatmap"  # Add points to layers control
