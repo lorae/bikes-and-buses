@@ -114,6 +114,12 @@ station_lines_in_buffer <- station_lines |>
   st_as_sf() |>
   filter(station1_in_buffer & station2_in_buffer) 
 
+top_station_lines_in_buffer <- station_lines_in_buffer |> 
+  slice_max(order_by = num_trips, n = 20) |> 
+  mutate(label = paste0("<b>Start:</b> ", station_name.x, "<br>",
+                        "<b>End:</b> ", station_name.y, "<br>",
+                        "<b>Rides:</b> ", num_trips))
+
 # Create tibble containing random sample of all bike trips
 station_lines_sample <- station_lines |>
   slice_sample(n = 6000)
@@ -208,41 +214,44 @@ server <- function(input, output, session) {
                    weight = 10,
                    opacity = .05,
                    color = ~ color_pal_quantile(num_trips),  # Apply quantile-based colors
-                   group = "Bike Routes") |>
-      
-      # Bike routes near subway stops
+                   group = "All Bike Routes") |>
       addPolylines(data = station_lines_in_buffer,
                    weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
                    opacity = .55,
                    color = ~ lines_palette(station_lines_in_buffer$num_trips),
-                   group = "Subway substitute bike routes") |>
-      
-      # Subway lines with colors and dashed style
-      addPolylines(data = subway_lines_sf,
-                   color = ~color,
-                   weight = 4,
+                   group = "Bike route substitutes subway") |>
+      addPolylines(data = top_station_lines_in_buffer,
+                   weight = 2,
                    opacity = 1,
-                   popup = ~name,
-                   dashArray = "10",
-                   group = "Subway Lines") |>
-      
-      # Adding a layers control
+                   label = ~ lapply(label, htmltools::HTML),
+                   highlightOptions = highlightOptions(weight = 4, color = "lightblue"),
+                   color = "navy",
+                   group = "Top bike routes near subways") |>
+      addPolylines(
+        data = subway_lines_sf,
+        color = ~color,
+        weight = 4, 
+        opacity = 1,
+        popup = ~name,
+        dashArray = "10",
+        group = "Subway Lines"
+      ) |>
       addLayersControl(
-        overlayGroups = c("Subway Stations", "Bike Routes", "Subway substitute bike routes", "Subway Lines"),
+        overlayGroups = c(
+          "Subway Stations",
+          "Subway Lines",
+          "Bike Routes",
+          "Bike route substitutes subway",
+          "Top bike routes near subways"
+        ),
         options = layersControlOptions(collapsed = FALSE)
       ) |>
-      
-      # Hiding some layers by default
-      hideGroup("Subway Stations") |>
-      hideGroup("Subway substitute bike routes") |>
-      
-      # Add a legend for the bike traffic density
-      addLegend("bottomright", 
-                pal = color_pal_quantile, 
-                values = station_lines_sample$num_trips,
-                title = "Bike Traffic Density",
-                labFormat = labelFormat(suffix = " trips"),
-                opacity = 1)
+      # Start with these layers off
+      hideGroup(c(
+        "Subway Stations",
+        "Top bike routes near subways",
+        "Bike route substitutes subway"
+        ))  
   })
 }
 
