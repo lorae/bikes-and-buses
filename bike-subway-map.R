@@ -114,6 +114,12 @@ station_lines_in_buffer <- station_lines |>
   st_as_sf() |>
   filter(station1_in_buffer & station2_in_buffer) 
 
+top_station_lines_in_buffer <- station_lines_in_buffer |> 
+  slice_max(order_by = num_trips, n = 20) |> 
+  mutate(label = paste0("<b>Start:</b> ", station_name.x, "<br>",
+                        "<b>End:</b> ", station_name.y, "<br>",
+                        "<b>Rides:</b> ", num_trips))
+
 # Create tibble containing random sample of all bike trips
 station_lines_sample <- station_lines |>
   slice_sample(n = 4000)
