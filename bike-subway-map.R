@@ -116,7 +116,7 @@ station_lines_in_buffer <- station_lines |>
 
 # Create tibble containing random sample of all bike trips
 station_lines_sample <- station_lines |>
-  slice_sample(n = 4000)
+  slice_sample(n = 6000)
 
 # ---- Visualization Prep ----
 lines_palette <- colorNumeric(
