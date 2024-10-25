@@ -163,6 +163,14 @@ server <- function(input, output, session) {
                    color = ~ lines_palette(station_lines_in_buffer$num_trips),
                    group = "Subway substitute bike routes") |>
       # Add colored subway lines on top of the black border
+                   group = "Bike route substitutes subway") |>
+      addPolylines(data = top_station_lines_in_buffer,
+                   weight = 2,
+                   opacity = 1,
+                   label = ~ lapply(label, htmltools::HTML),
+                   highlightOptions = highlightOptions(weight = 4, color = "lightblue"),
+                   color = "navy",
+                   group = "Top bike routes near subways") |>
       addPolylines(
         data = subway_lines_sf,
         color = ~color,
