@@ -47,17 +47,6 @@ station_lines <- station_lines |>
   st_as_sf() |> 
   filter(start_station_id != end_station_id, num_trips > 40)
 
-station_trips <- trips |> 
-  select(num_trips, start_station_id, end_station_id, total_ride_time_sec) |> 
-  filter(start_station_id != end_station_id) |> 
-  pivot_longer(cols = ends_with("station_id"), values_to = "station_id") |> 
-  summarise(trip_count = sum(num_trips), .by = c("station_id"))
-
-station_buffer <- stations |> 
-  st_buffer(units::set_units(.15, km)) |> 
-  left_join(station_trips, by = "station_id") |> 
-  mutate(label = paste0("<strong>", station_name, "</strong>", "<br><b>Total Trips:</b> ", trip_count))
-
 # Subway Data
 subway_stops <- read_csv("https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000") |>
   rename(lat = entrance_latitude, lng = entrance_longitude) |>
@@ -69,7 +58,13 @@ subway_stops <- read_csv("https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000
     entrance_longitude = mean(lng, na.rm = TRUE),
     complex_id = first(complex_id),
     daytime_routes = first(daytime_routes)
-  )
+  ) |> 
+  st_as_sf(coords = c("entrance_longitude", "entrance_latitude"), crs = "WGS84")
+
+# Buffer subway stations by 0.15 km for circles
+subway_buffer <- subway_stops |> 
+  st_buffer(units::set_units(0.15, km)) |> 
+  mutate(label = paste0("<strong>", stop_name, "</strong>", "<br><b>Routes:</b> ", daytime_routes))
 
 subway_lines <- read_csv("https://data.cityofnewyork.us/resource/s7zz-qmyz.csv") |> 
   st_as_sf(wkt = "the_geom", crs = 4326)
@@ -88,10 +83,6 @@ subway_lines_sf <- subway_lines |>
   mutate(color = ifelse(name %in% names(line_colors), line_colors[name], "#000000"))
 
 # ---- Visualization Prep ----
-station_palette <- colorNumeric(
-  palette = "viridis", domain = station_buffer$trip_count
-)
-
 lines_palette <- colorNumeric(
   palette = "viridis", domain = station_lines$num_trips
 )
@@ -110,24 +101,17 @@ server <- function(input, output, session) {
     leaflet() |> 
       addProviderTiles("CartoDB.Positron") |>
       setView(lng = -73.98565657576884, lat = 40.74846602002253, zoom = 13) |>
-      addPolygons(data = station_buffer,
+      addPolygons(data = subway_buffer,
                   weight = 0.75,
-                  color = ~ station_palette(station_buffer$trip_count),
-                  label = ~ lapply(station_buffer$label, htmltools::HTML),
-                  group = "Bike Stations") |>
+                  color = "blue",
+                  fillOpacity = 0.3,
+                  label = ~ lapply(label, htmltools::HTML),
+                  group = "Subway Stations") |>
       addPolylines(data = station_lines,
                    weight = .25,
                    opacity = .2,
                    color = ~ lines_palette(station_lines$num_trips),
                    group = "Bike Routes") |>
-      addCircleMarkers(
-        data = subway_stops,
-        lng = ~entrance_longitude,
-        lat = ~entrance_latitude,
-        radius = 5,
-        popup = ~paste(stop_name, "Routes:", daytime_routes),
-        group = "Subway Stops"
-      ) |>
       addPolylines(
         data = subway_lines_sf,
         color = ~color,
@@ -137,7 +121,7 @@ server <- function(input, output, session) {
         group = "Subway Lines"
       ) |>
       addLayersControl(
-        overlayGroups = c("Bike Stations", "Bike Routes", "Subway Stops", "Subway Lines"),
+        overlayGroups = c("Subway Stations", "Bike Routes", "Subway Lines"),
         options = layersControlOptions(collapsed = FALSE)
       )
   })
@@ -145,6 +129,7 @@ server <- function(input, output, session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
 
 
 
