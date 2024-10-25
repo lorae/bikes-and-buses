@@ -173,6 +173,8 @@ shinyApp(ui = ui, server = server)
 # TODO: only show the station_lines_in_buffer and convert other station_lines
 # to a heat map?
 # TODO: Or add all station_lines as optional filter on map?
+# TODO: Eliminate filter of bike rides > 40 since we now only have 3000 lines?
+# TODO: Make line thickness represent number of rides
 
 
 
