@@ -2,8 +2,6 @@ library(shiny)
 library(tidyverse)
 library(sf)
 library(leaflet)
-library(readr)
-library(dplyr)
 
 # ---- Preprocess Data Outside Server ----
 
