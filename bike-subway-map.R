@@ -34,18 +34,38 @@ trips <- bike_data |>
   filter(end_station_id != "NULL") |> 
   mutate(across(ends_with("station_id"), as.numeric))
 
-station_routes <- trips |> 
-  left_join(stations |> select(station_id, start_geometry = geometry), by = c("start_station_id" = "station_id")) |> 
-  left_join(stations |> select(station_id, end_geometry = geometry), by = c("end_station_id" = "station_id"))
+# We consolidate trips from A -> B and B -> A into one row in the
+# trips_unidirectional data frame
+trips_undirected <- trips |>
+  # Ensure pairs are treated as undirected by ordering station IDs
+  mutate(
+    station1_id = pmin(start_station_id, end_station_id),
+    station2_id = pmax(start_station_id, end_station_id)
+  ) |>
+  # Group by undirected pairs
+  group_by(station1_id, station2_id) |>
+  summarize(
+    trip_id = first(trip_id),  # Keep the first trip_id for reference
+    num_trips = sum(num_trips),
+    total_ride_time_sec = sum(total_ride_time_sec)
+  ) |>
+  mutate(
+    ave_ride_time_sec = total_ride_time_sec / num_trips
+  ) |>
+  ungroup()
 
-station_lines <- trips
+station_routes <- trips_undirected |> 
+  left_join(stations |> select(station_id, start_geometry = geometry), by = c("station1_id" = "station_id")) |> 
+  left_join(stations |> select(station_id, end_geometry = geometry), by = c("station2_id" = "station_id"))
+
+station_lines <- trips_undirected
 station_lines$geometry <- mapply(function(p1, p2) {
   st_cast(st_combine(c(p1, p2)), "LINESTRING")
 }, station_routes$start_geometry, station_routes$end_geometry)
 
 station_lines <- station_lines |> 
   st_as_sf() |> 
-  filter(start_station_id != end_station_id, num_trips > 40)
+  filter(station1_id != station2_id, num_trips > 40)
 
 # Subway Data
 subway_stops <- read_csv("https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000") |>
