@@ -148,7 +148,7 @@ ui <- fluidPage(
       
       # Introduction Text
       div(style = "font-family: 'Arial'; font-size: 16px; color: #34495E; line-height: 1.6;",
-          p("In 2023, Citi Bike users took over XXX rides. Although it’s difficult to know the exact routes these cyclists took, we represented their approximate routes on a map by connecting their start and endpoints."),
+          p("In 2023, Citi Bike users took over 13 million rides. Although it’s difficult to know the exact routes these cyclists took, we represented their approximate routes on a map by connecting their start and endpoints."),
           p("The base colors on the map—yellow for the least-frequented locations, and violet for the most-frequented locations—represent the density of Citi Bike traffic in 2023.")
       ),
       
