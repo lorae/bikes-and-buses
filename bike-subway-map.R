@@ -240,7 +240,6 @@ server <- function(input, output, session) {
         overlayGroups = c(
           "Subway Stations",
           "Subway Lines",
-          "Bike Routes",
           "Bike route substitutes subway",
           "Top bike routes near subways"
         ),
