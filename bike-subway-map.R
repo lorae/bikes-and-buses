@@ -2,8 +2,6 @@ library(shiny)
 library(tidyverse)
 library(sf)
 library(leaflet)
-library(readr)
-library(dplyr)
 
 # ---- Preprocess Data Outside Server ----
 
@@ -100,7 +98,7 @@ line_colors <- c(
 )
 
 subway_lines_sf <- subway_lines |> 
-  mutate(color = ifelse(name %in% names(line_colors), line_colors[name], "#000000"))
+  mutate(color = ifelse(rt_symbol %in% names(line_colors), line_colors[rt_symbol], "#000000"))
 
 # ---- Compute which bike rides are within/out of buffer ----
 in_buffer <- stations |>
@@ -124,7 +122,10 @@ station_lines_sample <- station_lines |>
 lines_palette <- colorNumeric(
   palette = "viridis", domain = station_lines$num_trips
 )
-
+# Define a color palette from red to green based on `num_trips`
+color_pal_quantile <- colorBin(palette = c("yellow", "purple"), 
+                               domain = station_lines_sample$num_trips, 
+                               bins = quantile(station_lines_sample$num_trips, probs = seq(0, 1, length.out = 10), na.rm = TRUE))
 # ---- Define UI ----
 ui <- fluidPage(
   titlePanel("Bike and Subway Map"),
@@ -146,23 +147,15 @@ server <- function(input, output, session) {
                   label = ~ lapply(label, htmltools::HTML),
                   group = "Subway Stations") |>
       addPolylines(data = station_lines_sample,
-                   weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
-                   opacity = .75,
-                   color = "grey",
+                   weight = 10,
+                   opacity = .05,
+                   color = ~ color_pal_quantile(num_trips),  # Apply quantile-based colors
                    group = "Bike Routes") |>
       addPolylines(data = station_lines_in_buffer,
                    weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
                    opacity = .55,
                    color = ~ lines_palette(station_lines_in_buffer$num_trips),
                    group = "Subway substitute bike routes") |>
-      # Add black border for subway lines
-      addPolylines(
-        data = subway_lines_sf,
-        color = "black",
-        weight = 5,  # Thicker for the border effect
-        opacity = 1,
-        group = "Subway Lines"
-      ) |>
       # Add colored subway lines on top of the black border
       addPolylines(
         data = subway_lines_sf,
@@ -170,6 +163,7 @@ server <- function(input, output, session) {
         weight = 4,  # Slightly thinner for the colored line
         opacity = 1,
         popup = ~name,
+        dashArray = "10",
         group = "Subway Lines"
       ) |>
       addLayersControl(
@@ -181,7 +175,10 @@ server <- function(input, output, session) {
         ),
         options = layersControlOptions(collapsed = FALSE)
       ) |>
-      hideGroup("Subway Stations")  # Start with "Subway Stations" off
+      hideGroup( # Start with these layers off
+        "Subway Stations") |>
+      hideGroup(
+        "Subway substitute bike routes")  
   })
 }
 
