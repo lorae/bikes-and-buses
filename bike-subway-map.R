@@ -128,70 +128,104 @@ color_pal_quantile <- colorBin(palette = c("yellow", "purple"),
                                bins = quantile(station_lines_sample$num_trips, probs = seq(0, 1, length.out = 10), na.rm = TRUE))
 # ---- Define UI ----
 ui <- fluidPage(
-  titlePanel("Bike and Subway Map"),
-  leafletOutput("bike_subway_map", height = "100vh")  # Set the height here
+  titlePanel("Where do New Yorkers Ride?"),
+  sidebarLayout(
+    sidebarPanel(
+      p("In 2023, Citi Bike users took over XXXXX rides. Although it’s difficult to know the exact twists and turns that these cyclists took, 
+        we represented their approximate routes on a map by connecting their start and endpoints. The base colors on the map—yellow for the least-frequented locations, 
+        and violet for the most-frequented locations—represent the density of Citibike traffic in 2023."),
+      
+      h4("Purpose of the Map"),
+      p("People bike for a variety of reasons—leisure, commuting, or even to connect with public transit. 
+        Our interest is in understanding where Citi Bike users may substitute biking for public transit.
+        To do this, we mapped New York City's subway system, and encircled each stop with a 150-yard radius. 
+        Then, we investigated bike rides that took place between two subway stops."),
+      
+      h4("Key Routes"),
+      p("Here are some of the most popular routes between subway stops that we identified:"),
+      tags$ul(
+        tags$li("Route A: 110th St at Central Park and XXX"),
+        tags$li("Route B: 116th St between B,C lines and XX, YY"),
+        tags$li("...")  # Add real examples here
+      ),
+      
+      p("These routes indicate significant biking activity in areas with parallel subway lines. 
+        This suggests that people might be using Citi Bike to supplement gaps in subway coverage."),
+      
+      h4("Future Insights"),
+      p("This map doesn’t show the full picture as it only includes subway lines. With more time, this map could include data about daily train ridership, 
+         bus delays, and other metrics. However, even without bus data, Citi Bike traffic patterns give insights into commuter behavior and areas that 
+         might benefit from improved transit coverage.")
+    ),
+    mainPanel(
+      leafletOutput("bike_subway_map", height = "80vh")  # Set the height here
+    )
+  )
 )
+
 
 # ---- Define Server logic ----
 server <- function(input, output, session) {
-
+  
   # Output the map
   output$bike_subway_map <- renderLeaflet({
     leaflet() |>
       addProviderTiles("CartoDB.Positron") |>
       setView(lng = -73.98565657576884, lat = 40.74846602002253, zoom = 13) |>
+      
+      # Subway buffer and bike routes
       addPolygons(data = subway_buffer,
                   weight = 0.75,
                   color = "blue",
                   fillOpacity = 0.3,
                   label = ~ lapply(label, htmltools::HTML),
                   group = "Subway Stations") |>
+      
+      # Bike routes sampled
       addPolylines(data = station_lines_sample,
                    weight = 10,
                    opacity = .05,
                    color = ~ color_pal_quantile(num_trips),  # Apply quantile-based colors
                    group = "Bike Routes") |>
+      
+      # Bike routes near subway stops
       addPolylines(data = station_lines_in_buffer,
                    weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
                    opacity = .55,
                    color = ~ lines_palette(station_lines_in_buffer$num_trips),
                    group = "Subway substitute bike routes") |>
-      # Add colored subway lines on top of the black border
-      addPolylines(
-        data = subway_lines_sf,
-        color = ~color,
-        weight = 4,  # Slightly thinner for the colored line
-        opacity = 1,
-        popup = ~name,
-        dashArray = "10",
-        group = "Subway Lines"
-      ) |>
+      
+      # Subway lines with colors and dashed style
+      addPolylines(data = subway_lines_sf,
+                   color = ~color,
+                   weight = 4,
+                   opacity = 1,
+                   popup = ~name,
+                   dashArray = "10",
+                   group = "Subway Lines") |>
+      
+      # Adding a layers control
       addLayersControl(
-        overlayGroups = c(
-          "Subway Stations",
-          "Bike Routes",
-          "Subway substitute bike routes",
-          "Subway Lines"
-        ),
+        overlayGroups = c("Subway Stations", "Bike Routes", "Subway substitute bike routes", "Subway Lines"),
         options = layersControlOptions(collapsed = FALSE)
       ) |>
-      hideGroup( # Start with these layers off
-        "Subway Stations") |>
-      hideGroup(
-        "Subway substitute bike routes")  
+      
+      # Hiding some layers by default
+      hideGroup("Subway Stations") |>
+      hideGroup("Subway substitute bike routes") |>
+      
+      # Add a legend for the bike traffic density
+      addLegend("bottomright", 
+                pal = color_pal_quantile, 
+                values = station_lines_sample$num_trips,
+                title = "Bike Traffic Density",
+                labFormat = labelFormat(suffix = " trips"),
+                opacity = 1)
   })
 }
 
 
 # Run the application
 shinyApp(ui = ui, server = server)
-
-# TODO: only show the station_lines_in_buffer and convert other station_lines
-# to a heat map?
-# TODO: Or add all station_lines as optional filter on map?
-# TODO: Eliminate filter of bike rides > 40 since we now only have 3000 lines?
-# TODO: Make line thickness represent number of rides
-
-
 
 
