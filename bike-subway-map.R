@@ -2,6 +2,7 @@ library(shiny)
 library(tidyverse)
 library(sf)
 library(leaflet)
+library(leaflet.extras)  # Import the extras package for heatmap
 library(readr)
 library(dplyr)
 
@@ -58,6 +59,12 @@ station_buffer <- stations |>
   left_join(station_trips, by = "station_id") |> 
   mutate(label = paste0("<strong>", station_name, "</strong>", "<br><b>Total Trips:</b> ", trip_count))
 
+# Extract coordinates for the heatmap
+heatmap_data <- station_buffer |> 
+  st_coordinates() |> 
+  as_tibble() |> 
+  bind_cols(station_buffer |> st_drop_geometry())  # Drop geometry and keep original data
+
 # Subway Data
 subway_stops <- read_csv("https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000") |>
   rename(lat = entrance_latitude, lng = entrance_longitude) |>
@@ -87,6 +94,15 @@ line_colors <- c(
 subway_lines_sf <- subway_lines |> 
   mutate(color = ifelse(name %in% names(line_colors), line_colors[name], "#000000"))
 
+# ---- viz prep ----
+station_palette <- colorNumeric(
+  palette = "viridis", domain = station_buffer$trip_count
+)
+
+lines_palette <- colorNumeric(
+  palette = "viridis", domain = station_lines$num_trips
+)
+
 # ---- Define UI ----
 ui <- fluidPage(
   titlePanel("Bike and Subway Map"),
@@ -100,12 +116,19 @@ server <- function(input, output, session) {
   output$bike_subway_map <- renderLeaflet({
     leaflet() |> 
       addProviderTiles("CartoDB.Positron") |>
-      addPolygons(data = station_buffer,
-                  weight = 0.75,
-                  color = ~ station_palette(station_buffer$trip_count),
-                  label = ~ lapply(station_buffer$label, htmltools::HTML),
-                  group = "Bike Stations") |>
-      addPolylines(data = station_lines |> filter(num_trips >= 100),
+      # Add heatmap layer instead of polygons
+      addHeatmap(
+        data = heatmap_data,
+        lng = ~X,  # Longitude column from st_coordinates
+        lat = ~Y,  # Latitude column from st_coordinates
+        intensity = ~ trip_count,
+        radius = 15,  # Adjust the radius of the blur
+        blur = 20,    # Adjust the blur amount
+        max = max(heatmap_data$trip_count),
+        gradient = c("red", "yellow", "green"),
+        group = "Trip Heatmap"
+      ) |>
+      addPolylines(data = station_lines,
                    weight = .25,
                    opacity = .2,
                    color = ~ lines_palette(station_lines$num_trips),
@@ -127,7 +150,7 @@ server <- function(input, output, session) {
         group = "Subway Lines"
       ) |>
       addLayersControl(
-        overlayGroups = c("Bike Stations", "Bike Routes", "Subway Stops", "Subway Lines"),
+        overlayGroups = c("Trip Heatmap", "Bike Routes", "Subway Stops", "Subway Lines"),
         options = layersControlOptions(collapsed = FALSE)
       )
   })
@@ -135,4 +158,5 @@ server <- function(input, output, session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
 
