@@ -248,7 +248,7 @@ server <- function(input, output, session) {
         intensity = ~num_trips,
         blur = 25, max = 1000, 
         minOpacity = 0.1,
-        radius = 20,
+        radius = 23,
         gradient = c("#ebdb34", "#d98704", "#ba0227", "#4b0380"),
         group = "Bike Route Heatmap"
       ) |>
