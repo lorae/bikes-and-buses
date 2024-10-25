@@ -65,7 +65,7 @@ station_lines$geometry <- mapply(function(p1, p2) {
 
 station_lines <- station_lines |> 
   st_as_sf() |> 
-  filter(station1_id != station2_id, num_trips > 40)
+  filter(station1_id != station2_id)
 
 # Subway Data
 subway_stops <- read_csv("https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=4000") |>
@@ -107,7 +107,7 @@ in_buffer <- stations |>
   mutate(within_subway_buffer = st_within(geometry, subway_buffer) |> lengths() > 0) |>
   st_drop_geometry()
 
-# Drop geometry, join with buffer info, reattach geometry, and filter
+# Create tibble containing station lines within a buffer zone of a subway
 station_lines_in_buffer <- station_lines |>
   st_drop_geometry() |>
   left_join(in_buffer |> rename(station1_in_buffer = within_subway_buffer), by = c("station1_id" = "station_id")) |>
@@ -116,6 +116,9 @@ station_lines_in_buffer <- station_lines |>
   st_as_sf() |>
   filter(station1_in_buffer & station2_in_buffer) 
 
+# Create tibble containing random sample of all bike trips
+station_lines_sample <- station_lines |>
+  slice_sample(n = 4000)
 
 # ---- Visualization Prep ----
 lines_palette <- colorNumeric(
@@ -130,10 +133,10 @@ ui <- fluidPage(
 
 # ---- Define Server logic ----
 server <- function(input, output, session) {
-  
+
   # Output the map
   output$bike_subway_map <- renderLeaflet({
-    leaflet() |> 
+    leaflet() |>
       addProviderTiles("CartoDB.Positron") |>
       setView(lng = -73.98565657576884, lat = 40.74846602002253, zoom = 13) |>
       addPolygons(data = subway_buffer,
@@ -142,32 +145,48 @@ server <- function(input, output, session) {
                   fillOpacity = 0.3,
                   label = ~ lapply(label, htmltools::HTML),
                   group = "Subway Stations") |>
-      # addPolylines(data = station_lines,
-      #              weight = .25,
-      #              opacity = .2,
-      #              color = ~ lines_palette(station_lines$num_trips),
-      #              group = "Bike Routes") |>
+      addPolylines(data = station_lines_sample,
+                   weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
+                   opacity = .75,
+                   color = "grey",
+                   group = "Bike Routes") |>
       addPolylines(data = station_lines_in_buffer,
-                   weight = .5,
-                   opacity = .2,
-                   color = "blue",
+                   weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
+                   opacity = .55,
+                   color = ~ lines_palette(station_lines_in_buffer$num_trips),
                    group = "Subway substitute bike routes") |>
+      # Add black border for subway lines
+      addPolylines(
+        data = subway_lines_sf,
+        color = "black",
+        weight = 5,  # Thicker for the border effect
+        opacity = 1,
+        group = "Subway Lines"
+      ) |>
+      # Add colored subway lines on top of the black border
       addPolylines(
         data = subway_lines_sf,
         color = ~color,
-        weight = 2,
-        opacity = 0.7,
+        weight = 4,  # Slightly thinner for the colored line
+        opacity = 1,
         popup = ~name,
         group = "Subway Lines"
       ) |>
       addLayersControl(
-        overlayGroups = c("Subway Stations", "Bike Routes", "Subway Lines"),
+        overlayGroups = c(
+          "Subway Stations",
+          "Bike Routes",
+          "Subway substitute bike routes",
+          "Subway Lines"
+        ),
         options = layersControlOptions(collapsed = FALSE)
-      )
+      ) |>
+      hideGroup("Subway Stations")  # Start with "Subway Stations" off
   })
 }
 
-# Run the application 
+
+# Run the application
 shinyApp(ui = ui, server = server)
 
 # TODO: only show the station_lines_in_buffer and convert other station_lines
