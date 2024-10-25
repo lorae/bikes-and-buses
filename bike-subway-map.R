@@ -156,13 +156,11 @@ server <- function(input, output, session) {
                    weight = 10,
                    opacity = .05,
                    color = ~ color_pal_quantile(num_trips),  # Apply quantile-based colors
-                   group = "Bike Routes") |>
+                   group = "All Bike Routes") |>
       addPolylines(data = station_lines_in_buffer,
                    weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
                    opacity = .55,
                    color = ~ lines_palette(station_lines_in_buffer$num_trips),
-                   group = "Subway substitute bike routes") |>
-      # Add colored subway lines on top of the black border
                    group = "Bike route substitutes subway") |>
       addPolylines(data = top_station_lines_in_buffer,
                    weight = 2,
@@ -174,7 +172,7 @@ server <- function(input, output, session) {
       addPolylines(
         data = subway_lines_sf,
         color = ~color,
-        weight = 4,  # Slightly thinner for the colored line
+        weight = 4, 
         opacity = 1,
         popup = ~name,
         dashArray = "10",
@@ -183,16 +181,19 @@ server <- function(input, output, session) {
       addLayersControl(
         overlayGroups = c(
           "Subway Stations",
+          "Subway Lines",
           "Bike Routes",
-          "Subway substitute bike routes",
-          "Subway Lines"
+          "Bike route substitutes subway",
+          "Top bike routes near subways"
         ),
         options = layersControlOptions(collapsed = FALSE)
       ) |>
-      hideGroup( # Start with these layers off
-        "Subway Stations") |>
-      hideGroup(
-        "Subway substitute bike routes")  
+      # Start with these layers off
+      hideGroup(c(
+        "Subway Stations",
+        "Top bike routes near subways",
+        "Bike route substitutes subway"
+        ))  
   })
 }
 
