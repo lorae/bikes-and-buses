@@ -124,7 +124,10 @@ station_lines_sample <- station_lines |>
 lines_palette <- colorNumeric(
   palette = "viridis", domain = station_lines$num_trips
 )
-
+# Define a color palette from red to green based on `num_trips`
+color_pal_quantile <- colorBin(palette = c("yellow", "purple"), 
+                               domain = station_lines_sample$num_trips, 
+                               bins = quantile(station_lines_sample$num_trips, probs = seq(0, 1, length.out = 10), na.rm = TRUE))
 # ---- Define UI ----
 ui <- fluidPage(
   titlePanel("Bike and Subway Map"),
@@ -146,9 +149,9 @@ server <- function(input, output, session) {
                   label = ~ lapply(label, htmltools::HTML),
                   group = "Subway Stations") |>
       addPolylines(data = station_lines_sample,
-                   weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
-                   opacity = .75,
-                   color = "grey",
+                   weight = 10,
+                   opacity = .05,
+                   color = ~ color_pal_quantile(num_trips),  # Apply quantile-based colors
                    group = "Bike Routes") |>
       addPolylines(data = station_lines_in_buffer,
                    weight = ~ scales::rescale(num_trips, to = c(0.1, 10)),
@@ -181,7 +184,10 @@ server <- function(input, output, session) {
         ),
         options = layersControlOptions(collapsed = FALSE)
       ) |>
-      hideGroup("Subway Stations")  # Start with "Subway Stations" off
+      hideGroup( # Start with these layers off
+        "Subway Stations") |>
+      hideGroup(
+        "Subway substitute bike routes")  
   })
 }
 
