@@ -41,11 +41,14 @@ line_colors <- c(
 )
 
 # Manually assign color to the color column
+# TODO: Some subway lines are incorrectly displayed with the default black color 
+# because multiple routes (e.g., A, B, C) share the same track. To accurately 
+# represent each line, we need to create a separate row for each route (e.g., one
+# for A, one for B, one for C), allowing the lines to overlap. This will also 
+# enable users to filter the map by individual subway lines and display only the 
+# selected route.
 subway_lines_sf <- subway_lines_sf |>
   mutate(color = ifelse(name %in% names(line_colors), line_colors[name], "#000000"))
-
-# Check the structure of the sf object to verify color assignment
-print(subway_lines_sf)
 
 # Create leaflet map with subway stops and lines
 leaflet() |>
@@ -62,10 +65,10 @@ leaflet() |>
   # Add subway lines as polylines with specific colors
   addPolylines(
     data = subway_lines_sf,
-    color = ~color,  # Directly reference the color column
+    color = ~color,
     weight = 2,
     opacity = 0.7,
-    popup = ~name  # Line name as popup
+    popup = ~name
   )
 
 
