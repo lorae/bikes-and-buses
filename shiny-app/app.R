@@ -9,9 +9,15 @@ load("data/preprocessed_bike_data.RData")
 # ---- Define UI ----
 ui <- fluidPage(
   titlePanel(
-    div(
-      "Where Do New Yorkers Ride?",
-      style = "font-family: 'Arial'; font-weight: bold; font-size: 28px; color: #2C3E50; text-align: center;"
+    tagList(
+      div(
+        "Where Do New Yorkers Ride?",
+        style = "font-family: 'Arial'; font-weight: bold; font-size: 28px; color: #2C3E50; text-align: center;"
+      ),
+      div(
+        "By Grace Hartley, Sarah Johnson, and Lorae Stojanovic",
+        style = "font-family: 'Arial'; font-size: 16px; color: #34495E; text-align: center; margin-top: 5px;"
+      )
     )
   ),
   
