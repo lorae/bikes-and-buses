@@ -160,6 +160,7 @@ server <- function(input, output, session) {
         weight = 4,  # Slightly thinner for the colored line
         opacity = 1,
         popup = ~name,
+        dashArray = "10",
         group = "Subway Lines"
       ) |>
       addLayersControl(
