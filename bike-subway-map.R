@@ -256,7 +256,7 @@ server <- function(input, output, session) {
                 pal = color_pal_quantile, 
                 values = station_lines_sample$num_trips,
                 title = "Bike Traffic Density",
-                labFormat = labelFormat(suffix = " trips"),
+                labFormat = labelFormat(suffix = " trips", digits = 0),
                 opacity = 1)
   })
 }
