@@ -153,14 +153,6 @@ server <- function(input, output, session) {
                    opacity = .55,
                    color = ~ lines_palette(station_lines_in_buffer$num_trips),
                    group = "Subway substitute bike routes") |>
-      # Add black border for subway lines
-      addPolylines(
-        data = subway_lines_sf,
-        color = "black",
-        weight = 5,  # Thicker for the border effect
-        opacity = 1,
-        group = "Subway Lines"
-      ) |>
       # Add colored subway lines on top of the black border
       addPolylines(
         data = subway_lines_sf,
