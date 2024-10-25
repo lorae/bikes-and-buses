@@ -251,7 +251,13 @@ server <- function(input, output, session) {
         "Subway Stations",
         "Top bike routes near subways",
         "Bike route substitutes subway"
-        ))  
+        ))  |>
+      addLegend("bottomright", 
+                pal = color_pal_quantile, 
+                values = station_lines_sample$num_trips,
+                title = "Bike Traffic Density",
+                labFormat = labelFormat(suffix = " trips"),
+                opacity = 1)
   })
 }
 
